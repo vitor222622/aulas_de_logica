@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login com Alternância de Tema</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Estilos personalizados */
+        :root {
+            --primary-light: #4361ee;
+            --primary-dark: #3a0ca3;
+            --bg-light: #ffffff;
+            --bg-dark: #14213d;
+            --text-light: #2b2d42;
+            --text-dark: #e5e5e5;
+        }
+
+        .dark {
+            background-color: var(--bg-dark);
+            color: var(--text-dark);
+        }
+
+        .light {
+            background-color: var(--bg-light);
+            color: var(--text-light);
+        }
+
+        .theme-toggle {
+            transition: all 0.3s ease;
+        }
+        .theme-toggle:hover {
+            transform: rotate(180deg);
+        }
+        .password-container {
+            position: relative;
+        }
+        .password-toggle {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            z-index: 10;
+        }
+        .strength-meter {
+            height: 5px;
+            background-color: #e2e8f0;
+            border-radius: 2.5px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        .strength-meter-fill {
+            height: 100%;
+            width: 0;
+            transition: width 0.3s ease, background-color 0.3s ease;
+        }
+        .btn-primary {
+            background-color: var(--primary-light);
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+        }
+        .dark .btn-primary {
+            background-color: var(--primary-dark);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center transition-colors duration-300">
+    <div class="w-full max-w-md p-8 rounded-xl shadow-xl bg-white dark:bg-slate-800 border border-gray-100 dark:border-gray-700 transition-all">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-2xl font-bold">Login Seguro</h1>
+            <button id="themeToggle" class="theme-toggle p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="5"/>
+                    <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                </svg>
+            </button>
+        </div>
+
+        <form id="loginForm" class="space-y-6">
+            <div>
+                <label for="email" class="block text-sm font-medium mb-2 dark:text-gray-300">Email</label>
+                <input type="email" id="email" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="seu@email.com" required>
+            </div>
+
+            <div>
+                <label for="password" class="block text-sm font-medium mb-2 dark:text-gray-300">Senha</label>
+                <div class="password-container">
+                    <input type="password" id="password" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="Digite sua senha" required>
+                    <span class="password-toggle text-gray-500 dark:text-gray-400" id="togglePassword">👁️</span>
+                </div>
+                <div class="flex items-center mt-2">
+                    <div class="strength-meter w-full">
+                        <div class="strength-meter-fill" id="passwordStrength"></div>
+                    </div>
+                </div>
+                <div id="passwordFeedback" class="text-xs mt-1 h-4"></div>
+            </div>
+
+            <button type="submit" class="w-full btn-primary py-2 px-4 rounded-lg font-medium transition-colors">
+                Entrar
+            </button>
+        </form>
+
+        <div class="mt-6 text-center text-sm">
+            <a href="#" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">Esqueceu sua senha?</a>
+        </div>
+    </div>
+
+    <script>
+        // Alternância de tema
+        const themeToggle = document.getElementById('themeToggle');
+        const html = document.documentElement;
+        let currentTheme = localStorage.getItem('theme') || 'light';
+
+        function applyTheme(theme) {
+            html.className = theme;
+            localStorage.setItem('theme', theme);
+        }
+
+        applyTheme(currentTheme);
+
+        themeToggle.addEventListener('click', () => {
+            currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+            applyTheme(currentTheme);
+        });
+
+        // Alternância de visibilidade da senha
+        const passwordInput = document.getElementById('password');
+        const togglePassword = document.getElementById('togglePassword');
+
+        togglePassword.addEventListener('click', () => {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            
+            if (type === 'text') {
+                togglePassword.textContent = '🙈';
+            } else {
+                togglePassword.textContent = '👁️';
+            }
+        });
+
+        // Validação de força da senha
+        passwordInput.addEventListener('input', () => {
+            const password = passwordInput.value;
+            const strengthMeter = document.getElementById('passwordStrength');
+            const feedback = document.getElementById('passwordFeedback');
+            
+            let strength = 0;
+            let messages = [];
+
+            // Verificar comprimento
+            if (password.length >= 8) strength += 1;
+            else messages.push('Mínimo 8 caracteres');
+
+            // Verificar letras maiúsculas
+            if (/[A-Z]/.test(password)) strength += 1;
+            else messages.push('Adicione letras maiúsculas');
+
+            // Verificar números
+            if (/[0-9]/.test(password)) strength += 1;
+            else messages.push('Adicione números');
+
+            // Verificar caracteres especiais
+            if (/[^A-Za-z0-9]/.test(password)) strength += 1;
+            else messages.push('Adicione caracteres especiais');
+
+            // Atualizar medidor de força
+            const width = strength * 25;
+            strengthMeter.style.width = `${width}%`;
+
+            // Atualizar cor e feedback
+            if (width === 0) {
+                strengthMeter.style.backgroundColor = 'transparent';
+            } else if (width <= 25) {
+                strengthMeter.style.backgroundColor = '#d64045'; // Vermelho escuro
+                feedback.textContent = 'Senha fraca';
+                feedback.className = 'text-xs mt-1 h-4 text-red-600';
+            } else if (width <= 50) {
+                strengthMeter.style.backgroundColor = '#ff9f1c'; // Laranja
+                feedback.textContent = 'Senha moderada';
+                feedback.className = 'text-xs mt-1 h-4 text-amber-600';
+            } else if (width <= 75) {
+                strengthMeter.style.backgroundColor = '#4361ee'; // Azul profundo
+                feedback.textContent = 'Senha boa';
+                feedback.className = 'text-xs mt-1 h-4 text-blue-600';
+            } else {
+                strengthMeter.style.backgroundColor = '#4cc9f0'; // Ciano
+                feedback.textContent = 'Senha forte';
+                feedback.className = 'text-xs mt-1 h-4 text-cyan-600';
+            }
+        });
+
+        // Validação do formulário
+        const loginForm = document.getElementById('loginForm');
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            // Validação básica
+            if (!email.includes('@')) {
+                alert('Por favor, insira um email válido');
+                return;
+            }
+
+            if (password.length < 8) {
+                alert('A senha deve ter pelo menos 8 caracteres');
+                return;
+            }
+
+            // Aqui você pode adicionar a lógica de autenticação real
+            alert(`Login bem-sucedido!\nEmail: ${email}`);
+        });
+    </script>
+</body>
+</html>  
